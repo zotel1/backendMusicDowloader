@@ -1,5 +1,6 @@
 package com.principal.backend.controller;
 
+import com.principal.backend.dto.GoogleUploadRequest;
 import com.principal.backend.service.GoogleDriveService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
