@@ -1,48 +1,60 @@
 package com.principal.backend.service;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.FileContent;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.services.drive.Drive;
+
 import com.principal.backend.dto.DownloadRequest;
 import com.principal.backend.dto.DownloadResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
-import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Map;
 
 @Service
 public class DownloadService {
 
-    public void uploadFileToDrive(String accessToken, String filePath) throws IOException {
-        GoogleCredential credential = new GoogleCredential().setAccessToken(accessToken);
+    private static final String PYTHON_API_URL = "https://tu-python-api.up.railway.app/api/download/?url=";
 
-        Drive driveService = new Drive.Builder(
-                GoogleNetHttpTransport.newTrustedTransport(),
-                GsonFactory.getDefaultInstance(),
-                credential
-        )
-                .setApplicationName("Downloader App")
-                .build();
+    @Autowired
+    private GoogleDriveService googleDriveService;
 
-        java.io.File fileToUpload = new java.io.File(filePath);
-        String mimeType = Files.probeContentType(fileToUpload.toPath());
+    public DownloadResponse handleDownloadProcess(DownloadRequest request) {
+        try {
+            // 1️⃣ Llamar a Python para descargar el archivo
+            RestTemplate restTemplate = new RestTemplate();
+            String pythonUrl = PYTHON_API_URL + URLEncoder.encode(request.getUrl(), StandardCharsets.UTF_8);
 
-        com.google.api.services.drive.model.File fileMetadata = new File();
-        fileMetadata.setName(fileToUpload.getName());
+            ResponseEntity<Map> pythonResponse = restTemplate.getForEntity(pythonUrl, Map.class);
 
-        FileContent mediaContent = new FileContent(mimeType != null ? mimeType : "application/octet-stream", fileToUpload);
+            if (pythonResponse.getBody() == null || !pythonResponse.getBody().containsKey("file_path")) {
+                return new DownloadResponse("error", "Python no devolvió una ruta válida.", null);
+            }
 
-        driveService.files()
-                .create(fileMetadata, mediaContent)
-                .setFields("id, name")
-                .execute();
+            String filePath = (String) pythonResponse.getBody().get("file_path");
+
+            // 2️⃣ Subir el archivo al Drive del usuario
+            File file = new File(filePath);
+            String mimeType = Files.probeContentType(Paths.get(filePath));
+
+            googleDriveService.uploadFileWithAccessToken(request.getAccessToken(), file, mimeType);
+
+            // 3️⃣ Eliminar el archivo temporal
+            Files.deleteIfExists(Paths.get(filePath));
+
+            return new DownloadResponse("success", "Archivo descargado y subido correctamente.", file.getName());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new DownloadResponse("error", e.getMessage(), null);
+        }
     }
-    }
+}
+
 
     /*
     private static final String PYTHON_API_URL = "http://127.0.0.1:8000/api/download/?url=";
@@ -58,4 +70,4 @@ public class DownloadService {
             return new DownloadResponse("error", e.getMessage(), null);
         }
     }*/
-}
+

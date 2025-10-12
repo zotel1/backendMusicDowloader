@@ -17,7 +17,7 @@ public class DownloadController {
     private DownloadService downloadService;
 
     @PostMapping
-    public DownloadResponse handleDownload(@RequestBody DownloadRequest request){
+    public ResponseEntity<DownloadResponse> handleDownload(@RequestBody DownloadRequest request) {
         try {
             DownloadResponse response = downloadService.handleDownloadProcess(request);
             return ResponseEntity.ok(response);
