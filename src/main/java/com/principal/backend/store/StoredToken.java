@@ -1,5 +1,8 @@
 package com.principal.backend.store;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class StoredToken {
     private String accessToken;
     private String refreshRoken;
