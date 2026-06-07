@@ -116,28 +116,32 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 
-			<!-- JaCoCo (report only — check disabled until tests exist) -->
+			<!-- JaCoCo — temporary: only prepare-agent + default-cli check with 0% threshold -->
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.12</version>
-				<configuration>
-					<rules>
-						<rule>
-							<element>BUNDLE</element>
-							<limits>
-								<limit>
-									<counter>LINE</counter>
-									<value>COVEREDRATIO</value>
-									<minimum>0.00</minimum>
-								</limit>
-							</limits>
-						</rule>
-					</rules>
-				</configuration>
 				<executions>
 					<execution>
 						<goals><goal>prepare-agent</goal></goals>
+					</execution>
+					<execution>
+						<id>default-cli</id>
+						<goals><goal>check</goal></goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.00</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
 					</execution>
 					<execution>
 						<id>report</id>
