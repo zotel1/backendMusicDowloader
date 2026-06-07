@@ -1,7 +1,7 @@
 name: PR CI
 
 on:
-  pull_request_target:
+  pull_request:
     branches: [develop]
 
 jobs:
@@ -17,11 +17,8 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build and verify
+      - name: Build and verify (includes JaCoCo check)
         run: ./mvnw verify
-
-      - name: JaCoCo check
-        run: ./mvnw jacoco:check
 
       - name: Upload JaCoCo report
         uses: actions/upload-artifact@v4
