@@ -1,4 +1,4 @@
-package com.principal.backend.dto;
+package com.principal.backend.presentation.dto;
 
 public class GoogleUploadRequest {
     private String accessToken;
