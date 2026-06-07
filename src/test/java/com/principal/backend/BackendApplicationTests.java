@@ -5,9 +5,12 @@ import com.principal.backend.domain.port.GoogleAccountRepository;
 import com.principal.backend.domain.port.GoogleAuthClient;
 import com.principal.backend.domain.port.JwtProvider;
 import com.principal.backend.domain.port.UserRepository;
+import com.principal.backend.infrastructure.adapter.jpa.repository.DownloadJobJpaRepository;
 import com.principal.backend.infrastructure.adapter.jpa.repository.GoogleAccountJpaRepository;
-import com.principal.backend.infrastructure.adapter.jpa.repository.UserJpaRepository;
+import com.principal.backend.infrastructure.adapter.jpa.repository.MediaFileJpaRepository;
+import com.principal.backend.infrastructure.adapter.jpa.repository.PlaylistJpaRepository;
 import com.principal.backend.infrastructure.adapter.jpa.repository.RefreshTokenJpaRepository;
+import com.principal.backend.infrastructure.adapter.jpa.repository.UserJpaRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -42,6 +45,15 @@ class BackendApplicationTests {
 
 	@MockitoBean
 	private GoogleAccountJpaRepository googleAccountJpaRepository;
+
+	@MockitoBean
+	private DownloadJobJpaRepository downloadJobJpaRepository;
+
+	@MockitoBean
+	private MediaFileJpaRepository mediaFileJpaRepository;
+
+	@MockitoBean
+	private PlaylistJpaRepository playlistJpaRepository;
 
 	@Test
 	void contextLoads() {
