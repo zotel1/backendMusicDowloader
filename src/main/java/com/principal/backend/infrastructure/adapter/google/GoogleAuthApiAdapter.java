@@ -7,23 +7,35 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.principal.backend.domain.model.GoogleTokenResponse;
 import com.principal.backend.domain.port.GoogleAuthClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Component
 public class GoogleAuthApiAdapter implements GoogleAuthClient {
 
     private static final JacksonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
 
+    private final RestTemplate restTemplate;
     private final String clientId;
     private final String clientSecret;
     private final String redirectUri;
 
     public GoogleAuthApiAdapter(
+            RestTemplate restTemplate,
             @Value("${google.oauth.clientId}") String clientId,
             @Value("${google.oauth.clientSecret}") String clientSecret,
             @Value("${google.oauth.redirectUri:postmessage}") String redirectUri) {
+        this.restTemplate = restTemplate;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.redirectUri = redirectUri;
@@ -35,7 +47,7 @@ public class GoogleAuthApiAdapter implements GoogleAuthClient {
             var tokenResponse = new GoogleAuthorizationCodeTokenRequest(
                     GoogleNetHttpTransport.newTrustedTransport(),
                     JSON_FACTORY,
-                    "https://oauth2.googleapis.com/token",
+                    TOKEN_URL,
                     clientId,
                     code,
                     redirectUri
@@ -67,8 +79,31 @@ public class GoogleAuthApiAdapter implements GoogleAuthClient {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public String refreshAccessToken(String refreshToken) {
-        // Will be implemented in Phase 4 (PR 2) with transparent refresh logic
-        throw new UnsupportedOperationException("Token refresh not yet implemented");
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("grant_type", "refresh_token");
+            body.add("client_id", clientId);
+            body.add("client_secret", clientSecret);
+            body.add("refresh_token", refreshToken);
+
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    TOKEN_URL, request, Map.class);
+
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody != null && responseBody.containsKey("access_token")) {
+                return (String) responseBody.get("access_token");
+            }
+
+            throw new RuntimeException("No access_token in refresh response");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to refresh access token", e);
+        }
     }
 }
