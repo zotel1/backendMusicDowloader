@@ -1,0 +1,3 @@
+-- Baseline migration for Music Downloader Platform
+-- This is an empty migration to establish Flyway baseline.
+-- Real schema migrations will follow in V2+.

@@ -2,7 +2,9 @@ package com.principal.backend.application.usecase;
 
 import com.principal.backend.domain.model.AuthResult;
 import com.principal.backend.domain.port.GoogleAuthClient;
+import org.springframework.stereotype.Service;
 
+@Service
 public class GoogleAuthUseCase {
 
     private final GoogleAuthClient authClient;

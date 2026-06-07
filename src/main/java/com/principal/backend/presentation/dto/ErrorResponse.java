@@ -1,17 +1,14 @@
-package com.principal.backend.dto;
+package com.principal.backend.presentation.dto;
 
-public class DownloadResponse {
+public class ErrorResponse {
     private String status;
     private String message;
-    private String title;
 
-    // Creamos nuestro constructor vacio
-    public DownloadResponse(){}
+    public ErrorResponse() {}
 
-    public DownloadResponse(String status, String message, String title){
+    public ErrorResponse(String status, String message) {
         this.status = status;
         this.message = message;
-        this.title = title;
     }
 
     public String getStatus() {
@@ -28,13 +25,5 @@ public class DownloadResponse {
 
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
     }
 }
