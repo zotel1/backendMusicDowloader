@@ -1,8 +1,10 @@
 package com.principal.backend.domain.port;
 
-import com.principal.backend.domain.model.AuthResult;
+import com.principal.backend.domain.model.GoogleTokenResponse;
 
 public interface GoogleAuthClient {
 
-    AuthResult exchangeCode(String code);
+    GoogleTokenResponse exchangeCode(String code);
+
+    String refreshAccessToken(String refreshToken);
 }

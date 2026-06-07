@@ -20,6 +20,12 @@ public class GoogleDriveApiAdapter implements GoogleDriveClient {
     }
 
     @Override
+    public void createFolders(String accessToken) {
+        // Will be implemented in Phase 4 (PR 2) with idempotent folder creation
+        // for "Music Downloader/Music/" and "Music Downloader/Videos/"
+    }
+
+    @Override
     public void uploadFile(String accessToken, java.io.File localFile, String mimeType) {
         try {
             Drive drive = buildDriveWithAccessToken(accessToken);
