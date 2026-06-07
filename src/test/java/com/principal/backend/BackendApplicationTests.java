@@ -7,7 +7,7 @@ import com.principal.backend.infrastructure.adapter.jpa.repository.UserJpaReposi
 import com.principal.backend.infrastructure.adapter.jpa.repository.RefreshTokenJpaRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(properties = {
 		"spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
@@ -16,19 +16,19 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 })
 class BackendApplicationTests {
 
-	@MockBean
+	@MockitoBean
 	private UserRepository userRepository;
 
-	@MockBean
+	@MockitoBean
 	private JwtProvider jwtProvider;
 
-	@MockBean
+	@MockitoBean
 	private PasswordEncoder passwordEncoder;
 
-	@MockBean
+	@MockitoBean
 	private UserJpaRepository userJpaRepository;
 
-	@MockBean
+	@MockitoBean
 	private RefreshTokenJpaRepository refreshTokenJpaRepository;
 
 	@Test
