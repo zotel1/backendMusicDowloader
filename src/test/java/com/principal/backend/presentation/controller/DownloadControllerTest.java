@@ -1,11 +1,12 @@
 package com.principal.backend.presentation.controller;
 
-import com.principal.backend.application.usecase.DownloadUseCase;
+import com.principal.backend.application.service.DownloadFacade;
 import com.principal.backend.application.usecase.GetDownloadsUseCase;
 import com.principal.backend.application.usecase.GetDownloadsUseCase.JobDetail;
 import com.principal.backend.domain.model.*;
 import com.principal.backend.domain.port.JwtProvider;
 import com.principal.backend.domain.port.UserRepository;
+import com.principal.backend.presentation.dto.DownloadRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class DownloadControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private DownloadUseCase downloadUseCase;
+    private DownloadFacade downloadFacade;
 
     @MockitoBean
     private GetDownloadsUseCase getDownloadsUseCase;
@@ -72,7 +73,7 @@ class DownloadControllerTest {
     void handleDownload_WithValidUrl_ReturnsDownloadResponse() throws Exception {
         DownloadJob job = new DownloadJob(JOB_ID, USER_ID, DownloadStatus.PENDING, DownloadType.VIDEO,
                 0, URL, null, NOW, NOW);
-        when(downloadUseCase.execute(eq(USER_ID), eq(URL))).thenReturn(job);
+        when(downloadFacade.createDownload(eq(USER_ID), any(DownloadRequest.class))).thenReturn(job);
 
         mockMvc.perform(post("/api/v1/download")
                         .contentType(MediaType.APPLICATION_JSON)
