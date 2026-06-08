@@ -1,62 +1,75 @@
 package com.principal.backend.application.usecase;
 
-import com.principal.backend.domain.model.DownloadResult;
-import com.principal.backend.domain.port.GoogleDriveClient;
-import com.principal.backend.domain.port.PythonDownloadClient;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
+import com.principal.backend.application.strategy.DownloadStrategy;
+import com.principal.backend.application.strategy.DownloadStrategyFactory;
+import com.principal.backend.domain.exception.NoLinkedGoogleAccountException;
+import com.principal.backend.domain.model.*;
+import com.principal.backend.domain.port.DownloadJobRepository;
+import com.principal.backend.domain.port.GoogleAccountRepository;
+import com.principal.backend.domain.port.MediaFileRepository;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.UUID;
 
 @Service
 public class DownloadUseCase {
 
-    private final PythonDownloadClient pythonClient;
-    private final GoogleDriveClient driveClient;
+    private final GoogleAccountRepository googleAccountRepository;
+    private final DownloadJobRepository downloadJobRepository;
+    private final DownloadStrategyFactory strategyFactory;
+    private final MediaFileRepository mediaFileRepository;
 
-    public DownloadUseCase(PythonDownloadClient pythonClient, GoogleDriveClient driveClient) {
-        this.pythonClient = pythonClient;
-        this.driveClient = driveClient;
+    public DownloadUseCase(GoogleAccountRepository googleAccountRepository,
+                           DownloadJobRepository downloadJobRepository,
+                           DownloadStrategyFactory strategyFactory,
+                           MediaFileRepository mediaFileRepository) {
+        this.googleAccountRepository = googleAccountRepository;
+        this.downloadJobRepository = downloadJobRepository;
+        this.strategyFactory = strategyFactory;
+        this.mediaFileRepository = mediaFileRepository;
     }
 
-    public DownloadResult execute(String url, String accessToken) {
+    public DownloadJob execute(UUID userId, String url) {
+        DownloadJob job = null;
         try {
-            // 1. Call Python to download the file
-            DownloadResult downloadResult = pythonClient.download(url);
+            GoogleAccount account = googleAccountRepository.findByUserId(userId)
+                    .orElseThrow(NoLinkedGoogleAccountException::new);
 
-            if (downloadResult == null || downloadResult.getFilePath() == null || downloadResult.getFilePath().isEmpty()) {
-                return new DownloadResult("error", "Python did not return a valid file path.", null);
-            }
+            DownloadType type = DownloadType.fromUrl(url);
+            job = new DownloadJob(UUID.randomUUID(), userId, DownloadStatus.PENDING,
+                    type, 0, url, null, Instant.now(), Instant.now());
+            downloadJobRepository.save(job);
 
-            String filePath = downloadResult.getFilePath();
+            transition(job, DownloadStatus.QUEUED);
+            transition(job, DownloadStatus.DOWNLOADING);
 
-            // 2. Create File and probe MIME type
-            File file = new File(filePath);
-            String mimeType = probeContentType(filePath);
+            DownloadStrategy strategy = strategyFactory.getStrategy(type);
+            DownloadResult result = strategy.execute(url, account.getAccessToken());
 
-            // 3. Upload to Google Drive
-            driveClient.uploadFile(accessToken, file, mimeType);
+            transition(job, DownloadStatus.PROCESSING);
+            transition(job, DownloadStatus.UPLOADING);
 
-            // 4. Delete the temp file
-            Files.deleteIfExists(Paths.get(filePath));
+            MediaFile mediaFile = new MediaFile(UUID.randomUUID(), job.getId(),
+                    result != null ? result.getFileName() : null, null, null,
+                    null, null, null, null, null, null);
+            mediaFileRepository.save(mediaFile);
 
-            // 5. Return result
-            return new DownloadResult("success", "File downloaded and uploaded successfully.", file.getName());
-
+            transition(job, DownloadStatus.COMPLETED);
         } catch (Exception e) {
-            return new DownloadResult("error", e.getMessage(), null);
+            if (job != null) {
+                job.setStatus(DownloadStatus.FAILED);
+                job.setErrorMessage(e.getMessage());
+                job.setUpdatedAt(Instant.now());
+                downloadJobRepository.save(job);
+            }
         }
+        return job;
     }
 
-    private String probeContentType(String filePath) {
-        try {
-            String mimeType = Files.probeContentType(Paths.get(filePath));
-            return mimeType != null ? mimeType : "application/octet-stream";
-        } catch (IOException e) {
-            return "application/octet-stream";
-        }
+    private void transition(DownloadJob job, DownloadStatus status) {
+        job.setStatus(status);
+        job.setUpdatedAt(Instant.now());
+        downloadJobRepository.save(job);
     }
 }
