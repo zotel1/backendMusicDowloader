@@ -56,7 +56,6 @@ public class DownloadUseCase {
             mediaFileRepository.save(mediaFile);
 
             transition(job, DownloadStatus.COMPLETED);
-            return job;
         } catch (Exception e) {
             if (job != null) {
                 job.setStatus(DownloadStatus.FAILED);
@@ -64,8 +63,8 @@ public class DownloadUseCase {
                 job.setUpdatedAt(Instant.now());
                 downloadJobRepository.save(job);
             }
-            return job;
         }
+        return job;
     }
 
     private void transition(DownloadJob job, DownloadStatus status) {
