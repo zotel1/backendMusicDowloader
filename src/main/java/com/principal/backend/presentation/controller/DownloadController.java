@@ -1,6 +1,6 @@
 package com.principal.backend.presentation.controller;
 
-import com.principal.backend.application.usecase.DownloadUseCase;
+import com.principal.backend.application.service.DownloadFacade;
 import com.principal.backend.application.usecase.GetDownloadsUseCase;
 import com.principal.backend.application.usecase.GetDownloadsUseCase.JobDetail;
 import com.principal.backend.domain.model.DownloadJob;
@@ -23,19 +23,19 @@ import java.util.UUID;
 @RequestMapping("/api/v1/download")
 public class DownloadController {
 
-    private final DownloadUseCase downloadUseCase;
+    private final DownloadFacade downloadFacade;
     private final GetDownloadsUseCase getDownloadsUseCase;
 
-    public DownloadController(DownloadUseCase downloadUseCase,
+    public DownloadController(DownloadFacade downloadFacade,
                               GetDownloadsUseCase getDownloadsUseCase) {
-        this.downloadUseCase = downloadUseCase;
+        this.downloadFacade = downloadFacade;
         this.getDownloadsUseCase = getDownloadsUseCase;
     }
 
     @PostMapping
     public ResponseEntity<DownloadResponse> handleDownload(@RequestBody DownloadRequest request) {
         UUID userId = getAuthenticatedUserId();
-        DownloadJob job = downloadUseCase.execute(userId, request.url());
+        DownloadJob job = downloadFacade.createDownload(userId, request);
         return ResponseEntity.ok(toResponse(job));
     }
 
