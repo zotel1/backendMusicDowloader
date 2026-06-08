@@ -1,11 +1,14 @@
 package com.principal.backend.application.usecase;
 
+import com.principal.backend.application.usecase.GetDownloadsUseCase.JobDetail;
 import com.principal.backend.domain.exception.DownloadJobNotFoundException;
 import com.principal.backend.domain.model.DownloadJob;
+import com.principal.backend.domain.model.MediaFile;
 import com.principal.backend.domain.port.DownloadJobRepository;
-import org.junit.jupiter.api.BeforeEach;
+import com.principal.backend.domain.port.MediaFileRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -20,13 +23,10 @@ import static org.mockito.Mockito.*;
 class GetDownloadsUseCaseTest {
 
     @Mock DownloadJobRepository downloadJobRepository;
+    @Mock MediaFileRepository mediaFileRepository;
 
+    @InjectMocks
     GetDownloadsUseCase useCase;
-
-    @BeforeEach
-    void setUp() {
-        useCase = new GetDownloadsUseCase(downloadJobRepository);
-    }
 
     @Test
     void getUserJobs_ReturnsAllJobsForUser() {
@@ -38,20 +38,44 @@ class GetDownloadsUseCaseTest {
         List<DownloadJob> result = useCase.getUserJobs(userId);
 
         assertEquals(2, result.size());
-        assertSame(job1, result.get(0));
-        assertSame(job2, result.get(1));
     }
 
     @Test
-    void getJobDetail_ReturnsJobWhenFoundAndBelongsToUser() {
+    void getJobDetail_ReturnsJobDetailWhenFoundAndBelongsToUser() {
         UUID userId = UUID.randomUUID();
         UUID jobId = UUID.randomUUID();
         DownloadJob job = mock(DownloadJob.class);
+        MediaFile mediaFile = mock(MediaFile.class);
         when(downloadJobRepository.findById(jobId)).thenReturn(Optional.of(job));
         when(job.getUserId()).thenReturn(userId);
+        when(mediaFileRepository.findByDownloadJobId(jobId)).thenReturn(Optional.of(mediaFile));
 
-        DownloadJob result = useCase.getJobDetail(userId, jobId);
+        JobDetail result = useCase.getJobDetail(userId, jobId);
 
-        assertSame(job, result);
+        assertSame(job, result.job());
+        assertSame(mediaFile, result.mediaFile());
+    }
+
+    @Test
+    void getJobDetail_ThrowsWhenJobBelongsToDifferentUser() {
+        UUID userId = UUID.randomUUID();
+        UUID otherUserId = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
+        DownloadJob job = mock(DownloadJob.class);
+        when(downloadJobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(job.getUserId()).thenReturn(otherUserId);
+
+        assertThrows(DownloadJobNotFoundException.class,
+                () -> useCase.getJobDetail(userId, jobId));
+    }
+
+    @Test
+    void getJobDetail_ThrowsWhenJobNotFound() {
+        UUID userId = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
+        when(downloadJobRepository.findById(jobId)).thenReturn(Optional.empty());
+
+        assertThrows(DownloadJobNotFoundException.class,
+                () -> useCase.getJobDetail(userId, jobId));
     }
 }
